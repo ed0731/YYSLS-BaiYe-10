@@ -322,22 +322,22 @@
     parts.forEach(function(p){ obj[p.type] = p.value; });
     return obj;
   }
-  function getUpcomingSaturdayEastern(){
+  // Week runs Monday to Sunday; "this week's weekend" = the Sunday that ends
+  // the Mon-Sun week containing today (Eastern calendar date).
+  function getThisWeekSundayEastern(){
     var parts = getEasternNowParts();
     var y = parseInt(parts.year,10), mo = parseInt(parts.month,10), d = parseInt(parts.day,10);
     var weekdayMap = { Sun:0, Mon:1, Tue:2, Wed:3, Thu:4, Fri:5, Sat:6 };
-    var wd = weekdayMap[parts.weekday];
-    var daysToAdd;
-    if (wd === 6) daysToAdd = 0;
-    else if (wd === 0) daysToAdd = 6;
-    else daysToAdd = 6 - wd;
+    var wd = weekdayMap[parts.weekday]; // 0=Sun..6=Sat
+    var iso = (wd === 0) ? 7 : wd; // 1=Mon..7=Sun
+    var daysToAdd = 7 - iso; // Sun->0, Mon->6, Tue->5, ..., Sat->1
     var baseNoonUTC = Date.UTC(y, mo-1, d, 12, 0, 0);
     var targetDate = new Date(baseNoonUTC + daysToAdd*86400000);
     return { y: targetDate.getUTCFullYear(), m: targetDate.getUTCMonth()+1, d: targetDate.getUTCDate() };
   }
   function computeDefaultActivityTimeUTCms(){
-    var sat = getUpcomingSaturdayEastern();
-    return easternWallClockToUTCms(sat.y, sat.m, sat.d, 17, 0);
+    var sun = getThisWeekSundayEastern();
+    return easternWallClockToUTCms(sun.y, sun.m, sun.d, 17, 0);
   }
   function formatEasternDisplay(utcMs){
     if(!utcMs) return '';
@@ -418,7 +418,7 @@
     var hasTime = !!activity.timeUTCms;
     var hint = hasTime
       ? '当前设定：' + formatEasternDisplay(activity.timeUTCms)
-      : '未设置 · 首位报名者直接报名时，将自动设为本周六 17:00（美东时间）';
+      : '未设置 · 首位报名者直接报名时，将自动设为本周周日 17:00（美东时间）';
     var main = [];
     for(var i=0;i<MAIN_COUNT;i++) main.push(renderSlotRow(activity, i));
     var backup = [];
@@ -535,6 +535,9 @@
       var p = getEasternDateTimeParts(act.timeUTCms);
       act.timeYMD = p.year + '-' + p.month + '-' + p.day;
       act.timeHM = p.hour + ':' + p.minute;
+    }
+    if(!act.name || !act.name.trim()){
+      act.name = '百业10人本';
     }
     act.slots[modalCtx.idx] = { gameId: gameId, role: role, note: note };
     saveState(state).then(function(){ closeModal(); render(); });
