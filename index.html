@@ -80,8 +80,11 @@
     padding:16px 14px 12px;
     margin-bottom:16px;
   }
+  .activity-header-row{ display:flex; align-items:flex-start; gap:8px; }
   .activity-name{
     width:100%;
+    flex:1 1 auto;
+    min-width:0;
     background:transparent;
     border:none;
     border-bottom:1px solid var(--card-border);
@@ -170,6 +173,17 @@
     padding:6px 14px;
     font-size:13px;
     font-family:'Noto Sans SC', sans-serif;
+  }
+  .delete-activity-btn{
+    flex:0 0 auto;
+    background:transparent;
+    border:1px solid rgba(201,106,99,0.4);
+    color:var(--danger);
+    border-radius:6px;
+    padding:5px 10px;
+    font-size:12.5px;
+    font-family:'Noto Sans SC', sans-serif;
+    white-space:nowrap;
   }
   .remove-btn{
     flex:0 0 auto;
@@ -425,7 +439,10 @@
     for(var j=MAIN_COUNT;j<TOTAL_SLOTS;j++) backup.push(renderSlotRow(activity, j));
 
     return '<section class="activity-card" data-act="' + activity.id + '">' +
-      '<input class="activity-name" type="text" maxlength="20" placeholder="点击输入活动名称（最多20字）" value="' + escapeHtml(activity.name) + '" data-action="editname" data-act="' + activity.id + '" />' +
+      '<div class="activity-header-row">' +
+        '<input class="activity-name" type="text" maxlength="20" placeholder="点击输入活动名称（最多20字）" value="' + escapeHtml(activity.name) + '" data-action="editname" data-act="' + activity.id + '" />' +
+        '<button class="delete-activity-btn" data-action="delete-activity" data-act="' + activity.id + '">删除活动</button>' +
+      '</div>' +
       '<div class="activity-time-row">' +
         '<span class="time-label">活动时间</span>' +
         '<input type="date" class="time-date" data-action="editdate" data-act="' + activity.id + '" value="' + escapeHtml(activity.timeYMD) + '" />' +
@@ -543,6 +560,15 @@
     saveState(state).then(function(){ closeModal(); render(); });
   }
 
+  function deleteActivity(actId){
+    var act = state.activities.find(function(a){ return a.id === actId; });
+    if(!act) return;
+    var ok = window.confirm('确定要删除这个活动吗？删除后该活动的所有报名信息将全部清除，且无法恢复。');
+    if(!ok) return;
+    state.activities = state.activities.filter(function(a){ return a.id !== actId; });
+    saveState(state).then(render);
+  }
+
   function removeSignup(actId, idx){
     var act = state.activities.find(function(a){ return a.id === actId; });
     if(!act) return;
@@ -558,6 +584,8 @@
     if(signupBtn){ openModal(signupBtn.dataset.act, parseInt(signupBtn.dataset.idx,10)); return; }
     var removeBtn = e.target.closest('[data-action="remove"]');
     if(removeBtn){ removeSignup(removeBtn.dataset.act, parseInt(removeBtn.dataset.idx,10)); return; }
+    var deleteBtn = e.target.closest('[data-action="delete-activity"]');
+    if(deleteBtn){ deleteActivity(deleteBtn.dataset.act); return; }
   });
   document.getElementById('app').addEventListener('change', function(e){
     var t = e.target;
