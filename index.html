@@ -369,22 +369,27 @@
     parts.forEach(function(p){ obj[p.type] = p.value; });
     return obj;
   }
-  // Week runs Monday to Sunday; "this week's weekend" = the Sunday that ends
-  // the Mon-Sun week containing today (Eastern calendar date).
-  function getThisWeekSundayEastern(){
-    var parts = getEasternNowParts();
-    var y = parseInt(parts.year,10), mo = parseInt(parts.month,10), d = parseInt(parts.day,10);
-    var weekdayMap = { Sun:0, Mon:1, Tue:2, Wed:3, Thu:4, Fri:5, Sat:6 };
-    var wd = weekdayMap[parts.weekday]; // 0=Sun..6=Sat
-    var iso = (wd === 0) ? 7 : wd; // 1=Mon..7=Sun
-    var daysToAdd = 7 - iso; // Sun->0, Mon->6, Tue->5, ..., Sat->1
-    var baseNoonUTC = Date.UTC(y, mo-1, d, 12, 0, 0);
-    var targetDate = new Date(baseNoonUTC + daysToAdd*86400000);
-    return { y: targetDate.getUTCFullYear(), m: targetDate.getUTCMonth()+1, d: targetDate.getUTCDate() };
-  }
+  // Week runs Monday to Sunday. The default activity time is anchored to
+  // "next Monday 05:00 China Standard Time" (China has no DST, fixed UTC+8),
+  // then that real instant is expressed/stored as its Eastern-time
+  // equivalent — which naturally shifts by an hour between EST and EDT.
   function computeDefaultActivityTimeUTCms(){
-    var sun = getThisWeekSundayEastern();
-    return easternWallClockToUTCms(sun.y, sun.m, sun.d, 17, 0);
+    var CHINA_OFFSET_MS = 8 * 3600000; // fixed, no DST
+    var now = new Date();
+    var shifted = new Date(now.getTime() + CHINA_OFFSET_MS); // read as "China wall clock" via UTC getters
+    var isoDay = shifted.getUTCDay(); // 0=Sun..6=Sat
+    var daysSinceMonday = (isoDay + 6) % 7; // Mon=0 ... Sun=6
+    var mondayAsUTC = Date.UTC(
+      shifted.getUTCFullYear(),
+      shifted.getUTCMonth(),
+      shifted.getUTCDate() - daysSinceMonday,
+      5, 0, 0
+    );
+    var candidateUTCms = mondayAsUTC - CHINA_OFFSET_MS; // real UTC instant of that Monday 05:00 China time
+    while(candidateUTCms <= now.getTime()){
+      candidateUTCms += 7 * 86400000; // roll forward to the next Monday if this one already passed
+    }
+    return candidateUTCms;
   }
   function formatEasternDisplay(utcMs){
     if(!utcMs) return '';
@@ -492,7 +497,7 @@
     var hasTime = !!activity.timeUTCms;
     var hint = hasTime
       ? '当前设定：' + formatEasternDisplay(activity.timeUTCms)
-      : '未设置 · 首位报名者直接报名时，将自动设为本周周日 17:00（美东时间）';
+      : '未设置 · 首位报名者直接报名时，将自动设为北京时间下周一凌晨5:00对应的美东时间（具体几点随美国夏令/冬令时变化）';
     var todayYMD = getEasternTodayYMD();
     var main = [];
     for(var i=0;i<MAIN_COUNT;i++) main.push(renderSlotRow(activity, i));
