@@ -388,7 +388,30 @@
   }
 
   function blankActivity(){
-    return { id: uid(), name:'', timeYMD:'', timeHM:'', timeTouched:false, timeUTCms:null, slots: new Array(TOTAL_SLOTS).fill(null) };
+    return { id: uid(), name:'', timeYMD:'', timeHM:'', timeTouched:false, timeUTCms:null, slots: new Array(TOTAL_SLOTS).fill(false) };
+  }
+
+  // Firebase treats `null` values as "delete this field" — a slots array that
+  // was all-null (a fresh, empty activity) round-trips back with the whole
+  // `slots` field missing. This repairs any activity coming from storage so
+  // `slots` is always a proper 15-length array, regardless of what shape it
+  // arrived in (missing, an object with string keys, short, etc).
+  function normalizeState(s){
+    if(!s || !Array.isArray(s.activities)) return { activities: [] };
+    s.activities.forEach(function(act){
+      var fixed = new Array(TOTAL_SLOTS).fill(false);
+      if(act.slots){
+        for(var k=0;k<TOTAL_SLOTS;k++){
+          var v = act.slots[k];
+          if(v) fixed[k] = v;
+        }
+      }
+      act.slots = fixed;
+      if(typeof act.name !== 'string') act.name = '';
+      if(typeof act.timeYMD !== 'string') act.timeYMD = '';
+      if(typeof act.timeHM !== 'string') act.timeHM = '';
+    });
+    return s;
   }
 
   function cleanupExpired(s){
@@ -396,7 +419,7 @@
     s.activities.forEach(function(act){
       if(act.timeUTCms && (Date.now() - act.timeUTCms > EXPIRE_MS)){
         act.name=''; act.timeYMD=''; act.timeHM=''; act.timeTouched=false; act.timeUTCms=null;
-        act.slots = new Array(TOTAL_SLOTS).fill(null);
+        act.slots = new Array(TOTAL_SLOTS).fill(false);
         changed = true;
       }
     });
@@ -572,7 +595,7 @@
   function removeSignup(actId, idx){
     var act = state.activities.find(function(a){ return a.id === actId; });
     if(!act) return;
-    act.slots[idx] = null;
+    act.slots[idx] = false;
     saveState(state).then(render);
   }
 
@@ -602,7 +625,7 @@
   // ---------- init ----------
   function init(){
     loadState().then(function(s){
-      state = s;
+      state = normalizeState(s);
       var changed = cleanupExpired(state);
       render();
       if(changed) saveState(state);
@@ -611,7 +634,7 @@
   init();
   setInterval(function(){
     loadState().then(function(s){
-      state = s;
+      state = normalizeState(s);
       var changed = cleanupExpired(state);
       render();
       if(changed) saveState(state);
