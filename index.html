@@ -558,6 +558,12 @@
       var dp = act.timeYMD.split('-').map(Number);
       var tp = act.timeHM.split(':').map(Number);
       act.timeUTCms = easternWallClockToUTCms(dp[0], dp[1], dp[2], tp[0], tp[1]);
+    } else if(act.timeYMD && !act.timeHM){
+      // Only a date was given, no time: treat it as 24:00 that day (= 00:00 the next day), Eastern.
+      var d2 = act.timeYMD.split('-').map(Number);
+      var noonUTC = Date.UTC(d2[0], d2[1]-1, d2[2], 12, 0, 0);
+      var nextDay = new Date(noonUTC + 86400000);
+      act.timeUTCms = easternWallClockToUTCms(nextDay.getUTCFullYear(), nextDay.getUTCMonth()+1, nextDay.getUTCDate(), 0, 0);
     } else {
       act.timeUTCms = null;
     }
