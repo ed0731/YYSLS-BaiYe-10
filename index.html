@@ -110,7 +110,23 @@
     position:absolute; left:0; top:2px; bottom:2px; width:3px; border-radius:2px;
     background:var(--gold);
   }
-  .time-fields{ display:flex; gap:10px; }
+  .time-cta{
+    font-size:12.5px;
+    color:var(--gold);
+    font-weight:500;
+    margin-bottom:8px;
+  }
+  .time-fields{ display:flex; gap:10px; border-radius:10px; }
+  .time-fields.unset{
+    border:1px dashed var(--gold-soft);
+    background:rgba(201,162,78,0.08);
+    padding:10px;
+    animation: pulseGlow 2.2s ease-in-out infinite;
+  }
+  @keyframes pulseGlow{
+    0%, 100% { box-shadow: 0 0 0 0 rgba(201,162,78,0.0); }
+    50% { box-shadow: 0 0 0 4px rgba(201,162,78,0.12); }
+  }
   .time-field{ flex:1; display:flex; flex-direction:column; gap:5px; min-width:0; }
   .time-field-label{ font-size:11.5px; color:var(--text-dim); }
   .time-date, .time-time{
@@ -373,6 +389,11 @@
     return dtf.format(new Date(utcMs)) + '（美东时间）';
   }
 
+  function getEasternTodayYMD(){
+    var parts = getEasternNowParts();
+    return parts.year + '-' + parts.month + '-' + parts.day;
+  }
+
   // ---------- storage ----------
   function loadState(){
     return fetch(FIREBASE_URL + DATA_PATH)
@@ -469,6 +490,7 @@
     var hint = hasTime
       ? '当前设定：' + formatEasternDisplay(activity.timeUTCms)
       : '未设置 · 首位报名者直接报名时，将自动设为本周周日 17:00（美东时间）';
+    var todayYMD = getEasternTodayYMD();
     var main = [];
     for(var i=0;i<MAIN_COUNT;i++) main.push(renderSlotRow(activity, i));
     var backup = [];
@@ -480,9 +502,10 @@
         '<button class="delete-activity-btn" data-action="delete-activity" data-act="' + activity.id + '">删除活动</button>' +
       '</div>' +
       '<div class="time-section-label">活动时间（美东时间 ET）</div>' +
-      '<div class="time-fields">' +
+      (hasTime ? '' : '<div class="time-cta">⏰ 尚未设置活动时间，点击下方选择日期和时间</div>') +
+      '<div class="time-fields' + (hasTime ? '' : ' unset') + '">' +
         '<label class="time-field"><span class="time-field-label">日期</span>' +
-          '<input type="date" class="time-date" data-action="editdate" data-act="' + activity.id + '" value="' + escapeHtml(activity.timeYMD) + '" /></label>' +
+          '<input type="date" class="time-date" min="' + todayYMD + '" data-action="editdate" data-act="' + activity.id + '" value="' + escapeHtml(activity.timeYMD) + '" /></label>' +
         '<label class="time-field"><span class="time-field-label">时间</span>' +
           '<input type="time" class="time-time" data-action="edittime" data-act="' + activity.id + '" value="' + escapeHtml(activity.timeHM) + '" /></label>' +
       '</div>' +
@@ -539,6 +562,8 @@
   function editDate(actId, value){
     var act = state.activities.find(function(a){ return a.id === actId; });
     if(!act) return;
+    var todayYMD = getEasternTodayYMD();
+    if(value && value < todayYMD) value = todayYMD;
     act.timeYMD = value;
     act.timeTouched = true;
     recomputeTime(act);
