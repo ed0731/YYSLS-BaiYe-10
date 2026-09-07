@@ -290,14 +290,15 @@
 
 <script>
 (function(){
-  var STORAGE_KEY = 'baiye_activities_v1';
   var MAIN_COUNT = 10, BACKUP_COUNT = 5, TOTAL_SLOTS = MAIN_COUNT + BACKUP_COUNT;
   var MAX_ACTIVITIES = 5;
   var EXPIRE_MS = 24 * 3600 * 1000;
 
   var state = { activities: [] };
   var modalCtx = null;
-  var storageMode = (typeof window.storage !== 'undefined' && window.storage) ? 'cloud' : 'local';
+  var FIREBASE_URL = 'https://baiye-10ren-ben-default-rtdb.firebaseio.com';
+  var DATA_PATH = '/baiye_activities.json';
+  var storageMode = 'cloud';
 
   function uid(){ return 'a' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
 
@@ -361,30 +362,29 @@
 
   // ---------- storage ----------
   function loadState(){
-    return new Promise(function(resolve){
-      if(storageMode === 'cloud'){
-        window.storage.get(STORAGE_KEY, true).then(function(res){
-          if(res && res.value){
-            try{ resolve(JSON.parse(res.value)); return; }catch(e){}
-          }
-          resolve({ activities: [] });
-        }).catch(function(){ resolve({ activities: [] }); });
-      } else {
+    return fetch(FIREBASE_URL + DATA_PATH)
+      .then(function(res){ return res.json(); })
+      .then(function(data){
+        if(data && data.activities) return data;
+        return { activities: [] };
+      })
+      .catch(function(e){
+        console.error('Firebase load failed, falling back to local storage', e);
         try{
-          var raw = localStorage.getItem(STORAGE_KEY);
-          resolve(raw ? JSON.parse(raw) : { activities: [] });
-        }catch(e){ resolve({ activities: [] }); }
-      }
-    });
+          var raw = localStorage.getItem('baiye_activities_local_fallback');
+          return raw ? JSON.parse(raw) : { activities: [] };
+        }catch(e2){ return { activities: [] }; }
+      });
   }
   function saveState(s){
-    var json = JSON.stringify(s);
-    if(storageMode === 'cloud'){
-      return window.storage.set(STORAGE_KEY, json, true).catch(function(e){ console.error('save failed', e); });
-    } else {
-      try{ localStorage.setItem(STORAGE_KEY, json); }catch(e){}
-      return Promise.resolve();
-    }
+    return fetch(FIREBASE_URL + DATA_PATH, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(s)
+    }).catch(function(e){
+      console.error('Firebase save failed, saving to local storage as backup', e);
+      try{ localStorage.setItem('baiye_activities_local_fallback', JSON.stringify(s)); }catch(e2){}
+    });
   }
 
   function blankActivity(){
