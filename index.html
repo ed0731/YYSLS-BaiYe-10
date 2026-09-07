@@ -97,22 +97,35 @@
   }
   .activity-name::placeholder{ color:var(--text-dim); font-weight:400; font-family:'Noto Sans SC', sans-serif; font-size:14.5px; }
   .activity-name:focus{ border-bottom-color: var(--gold); }
-  .activity-time-row{
-    display:flex; align-items:center; gap:8px;
-    margin-top:12px; flex-wrap:wrap;
+  .time-section-label{
+    font-size:12.5px;
+    font-weight:500;
+    margin:14px 0 6px;
+    padding-left:10px;
+    position:relative;
+    color:var(--gold);
   }
-  .time-label{ font-size:12.5px; color:var(--text-dim); flex:0 0 auto; }
+  .time-section-label::before{
+    content:'';
+    position:absolute; left:0; top:2px; bottom:2px; width:3px; border-radius:2px;
+    background:var(--gold);
+  }
+  .time-fields{ display:flex; gap:10px; }
+  .time-field{ flex:1; display:flex; flex-direction:column; gap:5px; min-width:0; }
+  .time-field-label{ font-size:11.5px; color:var(--text-dim); }
   .time-date, .time-time{
     background:var(--input-bg);
-    border:1px solid var(--card-border);
+    border:1px solid var(--gold-soft);
     color:var(--text);
-    border-radius:6px;
-    padding:6px 8px;
-    font-size:13px;
+    border-radius:9px;
+    padding:11px 10px;
+    font-size:15.5px;
     font-family:'Noto Sans SC', sans-serif;
     outline:none;
+    width:100%;
+    color-scheme: dark;
   }
-  .time-date:focus, .time-time:focus{ border-color:var(--gold); }
+  .time-date:focus, .time-time:focus{ border-color:var(--gold); box-shadow:0 0 0 3px rgba(201,162,78,0.18); }
   .time-hint{
     margin-top:8px;
     font-size:12px;
@@ -466,10 +479,12 @@
         '<input class="activity-name" type="text" maxlength="20" placeholder="点击输入活动名称（最多20字）" value="' + escapeHtml(activity.name) + '" data-action="editname" data-act="' + activity.id + '" />' +
         '<button class="delete-activity-btn" data-action="delete-activity" data-act="' + activity.id + '">删除活动</button>' +
       '</div>' +
-      '<div class="activity-time-row">' +
-        '<span class="time-label">活动时间</span>' +
-        '<input type="date" class="time-date" data-action="editdate" data-act="' + activity.id + '" value="' + escapeHtml(activity.timeYMD) + '" />' +
-        '<input type="time" class="time-time" data-action="edittime" data-act="' + activity.id + '" value="' + escapeHtml(activity.timeHM) + '" />' +
+      '<div class="time-section-label">活动时间（美东时间 ET）</div>' +
+      '<div class="time-fields">' +
+        '<label class="time-field"><span class="time-field-label">日期</span>' +
+          '<input type="date" class="time-date" data-action="editdate" data-act="' + activity.id + '" value="' + escapeHtml(activity.timeYMD) + '" /></label>' +
+        '<label class="time-field"><span class="time-field-label">时间</span>' +
+          '<input type="time" class="time-time" data-action="edittime" data-act="' + activity.id + '" value="' + escapeHtml(activity.timeHM) + '" /></label>' +
       '</div>' +
       '<div class="time-hint' + (hasTime ? ' set' : '') + '">' + hint + '</div>' +
       '<div class="slot-group">' +
