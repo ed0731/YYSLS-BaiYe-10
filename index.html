@@ -457,15 +457,11 @@
   }
 
   function cleanupExpired(s){
-    var changed = false;
-    s.activities.forEach(function(act){
-      if(act.timeUTCms && (Date.now() - act.timeUTCms > EXPIRE_MS)){
-        act.name=''; act.timeYMD=''; act.timeHM=''; act.timeTouched=false; act.timeUTCms=null;
-        act.slots = new Array(TOTAL_SLOTS).fill(false);
-        changed = true;
-      }
+    var before = s.activities.length;
+    s.activities = s.activities.filter(function(act){
+      return !(act.timeUTCms && (Date.now() - act.timeUTCms > EXPIRE_MS));
     });
-    return changed;
+    return s.activities.length !== before;
   }
 
   // ---------- render ----------
