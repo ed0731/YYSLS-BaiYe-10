@@ -227,7 +227,6 @@
     padding:4px 6px;
   }
   .add-activity-wrap{ text-align:center; margin:6px 0 24px; }
-  .add-activity-top{ margin-top:16px; margin-bottom:18px; }
   .btn-add-activity{
     background:transparent;
     border:1px dashed var(--gold-soft);
@@ -527,21 +526,13 @@
   function render(){
     var app = document.getElementById('app');
     var html = '';
-    var canAdd = state.activities.length < MAX_ACTIVITIES;
-    var countLabel = state.activities.length + '/' + MAX_ACTIVITIES;
-
-    if(canAdd){
-      html += '<div class="add-activity-wrap add-activity-top"><button class="btn-add-activity" data-action="add-activity">＋ 添加活动（' + countLabel + '）</button></div>';
-    }
-
     if(state.activities.length === 0){
-      html += '<div class="empty-state"><div class="empty-title">还没有活动</div>点击上方按钮创建第一个活动吧</div>';
+      html += '<div class="empty-state"><div class="empty-title">还没有活动</div>点击下方按钮创建第一个活动吧</div>';
     } else {
       state.activities.forEach(function(act){ html += renderActivity(act); });
     }
-
-    if(canAdd){
-      html += '<div class="add-activity-wrap"><button class="btn-add-activity" data-action="add-activity">＋ 添加活动（' + countLabel + '）</button></div>';
+    if(state.activities.length < MAX_ACTIVITIES){
+      html += '<div class="add-activity-wrap"><button class="btn-add-activity" id="btnAddActivity">＋ 添加活动（' + state.activities.length + '/' + MAX_ACTIVITIES + '）</button></div>';
     } else {
       html += '<p class="limit-note">已达到最多 5 个活动</p>';
     }
@@ -660,7 +651,7 @@
 
   // ---------- events ----------
   document.getElementById('app').addEventListener('click', function(e){
-    var addBtn = e.target.closest('[data-action="add-activity"]');
+    var addBtn = e.target.closest('#btnAddActivity');
     if(addBtn){ addActivity(); return; }
     var signupBtn = e.target.closest('[data-action="signup"]');
     if(signupBtn){ openModal(signupBtn.dataset.act, parseInt(signupBtn.dataset.idx,10)); return; }
